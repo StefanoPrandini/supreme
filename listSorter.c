@@ -3,7 +3,6 @@
 #include "time.h"
 #include "string.h"
 #include "stdbool.h"
-#include "time.h"
 
 #define BILLION 1000000000L
 
@@ -72,7 +71,7 @@
 
 typedef struct list_element {
   unsigned long index;
-  char label[10];               //10 char + "/0" fine stringa
+  char label[10];
   struct list_element* prev;
   struct list_element* next;
 } list_element;
@@ -83,20 +82,21 @@ typedef struct {
   int size;
 } list;
 
+//dichiarazioni funzioni per non doverle definire in ordine dopo
 list_element* create_element();
 void create_label();
+bool compare_label(char *str1, char *str2);
 void create_list(int dimension, list *list);
 void print_data(list_element *element, int pos);
-bool compare_label(char *str1, char *str2);
+void print_info(list *list);
 bool has_to_swap(list_element *first, list_element *second);
 void swap_fields(list_element *first, list_element *second);
 void bubble_sort(list_element *head, list_element *tail);
 
 int main(int argc, char const *argv[])
 {
-
-  srand(time(NULL));                          //puù venire chiamato solo una volta
-  int randDimension = ((rand() % 6001) + 3000);   //rand tra 300 e 900 (era rand()% 601) + 300
+  srand(time(NULL));                               //può venire chiamato solo una volta
+  int randDimension = ((rand() % 6001) + 3000);   //rand tra 3000 e 9000
 
   list list;
   list.size = randDimension;
@@ -104,12 +104,10 @@ int main(int argc, char const *argv[])
   list.tail = NULL;
 
   create_list(randDimension, &list);
-
   printf("dimensione lista: %d\n\n", list.size);
 
   list_element *toPrint1 = list.head;
   int i = 0;
-
   while(toPrint1->next != NULL)
   {
     print_data(toPrint1, i);
@@ -118,11 +116,7 @@ int main(int argc, char const *argv[])
   }
   print_data(list.tail, i);
 
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  printf("\n           LIST_INFO\n");
-  printf("head -> index: %lu  | label: %s\n", list.head->index, list.head->label);
-  printf("tail -> index: %lu  | label: %s\n", list.tail->index, list.tail->label);
-  printf("size = %d\n\n", list.size);
+  print_info(&list);
 
   // struct timespec {
   //         time_t   tv_sec;        /* seconds */
@@ -150,9 +144,11 @@ int main(int argc, char const *argv[])
   }
   print_data(list.tail, i);
 
+  print_info(&list);
+
   long int totNanoseconds = ((end.tv_sec - beginning.tv_sec)*BILLION) + (end.tv_nsec - beginning.tv_nsec);
 
-  printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("\n~~~~~~~~~~~~~~~~~~~~~~~~TIME~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
   printf("Sorting time = %ld nanoseconds = %f seconds\n\n",totNanoseconds, (double)totNanoseconds/BILLION);
 
   return 0;
@@ -186,7 +182,7 @@ void create_list(int dimension, list *list)
   }
 }
 
-char stringa[10];
+char stringa[10];   //todo: rimuovere variabile globale
 void create_label()
 {
   for (int i = 0; i < 10; i++)
@@ -226,6 +222,14 @@ void print_data(list_element *element, int pos)
   }
 }
 
+void print_info(list *list)
+{
+  printf("\n~~~~~~~~~~~~~~~~~~~~~~LIST_INFO~~~~~~~~~~~~~~~~~~~~~~\n\n");
+  printf("head -> index: %lu  | label: %s\n", list->head->index, list->head->label);
+  printf("tail -> index: %lu  | label: %s\n", list->tail->index, list->tail->label);
+  printf("size = %d\n", list->size);
+
+}
 void bubble_sort(list_element *head, list_element *tail)
 {
   list_element *last = tail;
