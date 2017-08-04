@@ -3,21 +3,188 @@
 #include "time.h"
 #include "string.h"
 #include "stdbool.h"
+#include "time.h"
 
-typedef struct list_element
-{
+#define BILLION 1000000000L
+
+// void adjustLinks(list_element *first, list_element *second)
+// {
+//   list_element *tmpFirstPrev,*tmpFirstNext, *tmpSecondPrev, *tmpSecondNext;
+//
+//   // if(first->prev != NULL)
+//   //   tmpFirstPrev = first->prev;
+//   // else
+//   //   tmpFirstPrev =NULL;        //sennò non posso fare =first->prev perchè è null
+//   // if(first->next != NULL)
+//   //   tmpFirstNext = first->next;
+//   // else
+//   //   tmpFirstNext = NULL;
+//   // if(second->prev != NULL)
+//   //   tmpSecondPrev = second->prev;
+//   // else
+//   //   tmpSecondPrev = NULL;
+//   // if(second->next != NULL)
+//   //   tmpSecondNext = second->next;
+//   // else
+//   //   tmpSecondNext = NULL;
+//   //
+//   // if(tmpFirstPrev != NULL)
+//   //   first->prev->next = second;
+//   // if(tmpSecondPrev != NULL)
+//   //   second->prev->next = first;
+//   // if(tmpFirstNext != NULL)
+//   //   second->next = tmpFirstNext;
+//   // else
+//   //   second->next = NULL;
+//   // if(tmpSecondNext != NULL)
+//   //   first->next = tmpSecondNext;
+//   // else
+//   //   first->next = NULL;
+//   //
+//   // if(tmpSecondPrev != NULL)
+//   //   first->prev = tmpSecondPrev;
+//   // else
+//   //   first->prev = NULL;
+//   // if(tmpFirstPrev != NULL)
+//   //   second->prev = tmpFirstPrev;
+//   // else
+//   //   second->prev = NULL;
+//   // if(second->next != NULL)
+//   //   second->next->prev = first;
+//   // if(first->next != NULL)
+//   //   first->next->prev = second;
+//   //
+//   tmpFirstPrev = first->prev;
+//   tmpFirstNext = first->next;
+//   tmpSecondPrev = second->prev;
+//   tmpSecondNext = second->next;
+//
+//   first->prev->next = second;
+//   second->prev->next = first;
+//   second->next = tmpFirstNext;
+//   first->next = tmpSecondNext;
+//
+//   first->prev = tmpSecondPrev;
+//   second->prev = tmpFirstPrev;
+//   second->next->prev = first;
+//   first->next->prev = second;
+// }
+
+typedef struct list_element {
   unsigned long index;
   char label[10];               //10 char + "/0" fine stringa
   struct list_element* prev;
   struct list_element* next;
 } list_element;
 
-typedef struct
-{
+typedef struct {
   list_element* head;
   list_element* tail;
   int size;
 } list;
+
+list_element* create_element();
+void create_label();
+void create_list(int dimension, list *list);
+void print_data(list_element *element, int pos);
+bool compare_label(char *str1, char *str2);
+bool has_to_swap(list_element *first, list_element *second);
+void swap_fields(list_element *first, list_element *second);
+void bubble_sort(list_element *head, list_element *tail);
+
+int main(int argc, char const *argv[])
+{
+
+  srand(time(NULL));                          //puù venire chiamato solo una volta
+  int randDimension = ((rand() % 6001) + 3000);   //rand tra 300 e 900 (era rand()% 601) + 300
+
+  list list;
+  list.size = randDimension;
+  list.head = NULL;
+  list.tail = NULL;
+
+  create_list(randDimension, &list);
+
+  printf("dimensione lista: %d\n\n", list.size);
+
+  list_element *toPrint1 = list.head;
+  int i = 0;
+
+  while(toPrint1->next != NULL)
+  {
+    print_data(toPrint1, i);
+    i++;
+    toPrint1 = toPrint1->next;
+  }
+  print_data(list.tail, i);
+
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  printf("\n           LIST_INFO\n");
+  printf("head -> index: %lu  | label: %s\n", list.head->index, list.head->label);
+  printf("tail -> index: %lu  | label: %s\n", list.tail->index, list.tail->label);
+  printf("size = %d\n\n", list.size);
+
+  // struct timespec {
+  //         time_t   tv_sec;        /* seconds */
+  //         long     tv_nsec;       /* nanoseconds */
+  // };
+
+  struct timespec beginning, end;
+  clockid_t clk_id = CLOCK_MONOTONIC;
+  int start_time = clock_gettime(clk_id, &beginning);
+
+  bubble_sort(list.head, list.tail);
+
+  int finish_time = clock_gettime(clk_id, &end);
+
+  printf("first element: index = %lu | label = %s\n", list.head->index, list.head->label);
+  printf("last element: index = %lu | label = %s\n", list.tail->index, list.tail->label);
+
+  list_element *toPrint2 = list.head;
+  i = 0;
+  while(toPrint2->next != NULL)
+  {
+    print_data(toPrint2, i);
+    i++;
+    toPrint2 = toPrint2->next;
+  }
+  print_data(list.tail, i);
+
+  long int totNanoseconds = ((end.tv_sec - beginning.tv_sec)*BILLION) + (end.tv_nsec - beginning.tv_nsec);
+
+  printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("Sorting time = %ld nanoseconds = %f seconds\n\n",totNanoseconds, (double)totNanoseconds/BILLION);
+
+  return 0;
+} //END MAIN
+
+void create_list(int dimension, list *list)
+{
+  list_element *previous;
+
+  for(int i = 0; i < dimension; i++)
+  {
+    list_element *element = create_element();
+    if(i == 0)  //testa della lista
+    {
+      list->head = element;
+      element->prev = NULL;  //head non ha prev
+    }
+    else if(i == dimension - 1) //coda della lista
+    {
+      list->tail = element;
+      element->next = NULL;  //tail non ha next
+      element->prev = previous;  //il suo prev è quello creato prima
+      previous->next = element;  //l'elemento diventa il next di quello creato prima
+    }
+    else
+    {
+      element->prev = previous;  //il suo prev è quello creato prima
+      previous->next = element;  //l'elemento diventa il next di quello creato prima
+    }
+    previous = element;  //salvo questo elemento per farlo diventare il prev di quello che creo dopo
+  }
+}
 
 char stringa[10];
 void create_label()
@@ -28,122 +195,96 @@ void create_label()
   }
 }
 
-list_element create_element()
+list_element* create_element()
 {
-  list_element new_element;
-  new_element.index = rand()%100;             //index tra 0 e 99
+  list_element *new_element = malloc(sizeof(list_element));
+  new_element->index = rand()%1000;             //index tra 0 e 999
   create_label();
-  strcpy(new_element.label, stringa);
-  new_element.prev = NULL;                    //li crea senza i puntatori a next e prev
-  new_element.next = NULL;
+  strcpy(new_element->label, stringa);
+  new_element->prev = NULL;                    //li crea senza i puntatori a next e prev
+  new_element->next = NULL;
 
   return new_element;
 }
 
-// void bubbleSort(char *items, int count) 	//algoritmo di scambio
-// {
-// 	char t;
-// 	for(int a = 1; a < count; a++)
-// 	{
-// 		for(int b = count-1; b >= a; b--)
-// 		{
-// 		    if(items[b-1] > items[b])
-// 			{
-// 				t = items[b-1];
-// 				items[b-1] = items[b];
-// 				items[b] = t;
-// 		    }
-// 		}
-// 	}
-// }
-
-int pos = 0;
-void stampaDati(list_element element)
+void print_data(list_element *element, int pos)
 {
-  printf("ELEMENT %d\n", pos);
+  printf("          ELEMENT %d\n", pos);
   pos++;
-  printf("-index: %lu\n", element.index);
-  printf("-label: %s\n", element.label);
-  if(element.prev == NULL)
-    printf("-prev -> index: NULL | label: NULL\n");
+  printf("index: %lu  | label: %s\n", element->index, element->label);
+  if(element->prev == NULL)
+    printf("(prev -> index: NULL | label: NULL)\n");
   else
-    printf("-prev -> index: %lu | label: %s\n", element.prev->index, element.prev->label);
-  if(element.next == NULL)
-    printf("-next -> index: NULL | label: NULL\n");
+    printf("(prev -> index: %lu | label: %s)\n", element->prev->index, element->prev->label);
+  if(element->next == NULL)
+    printf("(next -> index: NULL | label: NULL)\n");
   else
   {
-    printf("-next -> index: %lu | label: %s\n\n", element.next->index, element.next->label);
-    printf("      ^ | \n");
-    printf("      | v \n\n");
+    printf("(next -> index: %lu | label: %s)\n\n", element->next->index, element->next->label);
+    printf("              ^ | \n");
+    printf("              | v \n\n");
   }
 }
 
-int main(int argc, char const *argv[])
+void bubble_sort(list_element *head, list_element *tail)
 {
-
-  srand(time(NULL));                          //puù venire chiamato solo una volta
-  int randDimension = ((rand() % 601) + 300);   //rand tra 300 e 900 (era rand()% 601) + 300
-
-  list list;
-  list.size = randDimension;
-  list.head = NULL;
-  list.tail = NULL;
-
-  list_element elements[list.size]; //array di list_element grande list.size
-                                    //so già quanti elementi ho, per non usare malloc
-
-  for (int i = 0; i < list.size; i++)
+  list_element *last = tail;
+  while(head->next != NULL)
   {
-    elements[i] = create_element(); //inserisco gli elementi nel vettore
-    if(i == 0)  //il primo non ha predecessore
+    tail = last;  //faccio tornare tail in fondo
+    while(tail != head)
     {
-      elements[i].prev = NULL;
-      list.head = &elements[i];
+      if(has_to_swap(head, tail))
+        swap_fields(head, tail);
+      tail = tail->prev;
     }
-
-    else if(i == list.size - 1) //l'ultimo non ha successore
-    {
-      elements[i].next = NULL;
-      elements[i].prev = &elements[i - 1];
-      elements[i - 1].next = &elements[i];
-      list.tail = &elements[i];
-    }
-    else
-    {
-      elements[i].prev = &elements[i - 1]; //collega elemento al predecessore
-      elements[i - 1].next = &elements[i];  //collega il predecessere all'elemento
-    }
+    head = head->next;
   }
+}
 
-  printf("dimensione lista: %d\n\n", list.size);
+void swap_fields(list_element *first, list_element *second)
+{
+  int tmpIndex;
+  char *tmpLabel = malloc(strlen(first->label)+1);
 
-  bool thereIsElement;
-  list_element element;
-  if(list.head != NULL)  //se c'è il puntatore alla testa
+  tmpIndex = first->index;
+  first->index = second->index;
+  second->index = tmpIndex;
+
+  strcpy(tmpLabel, first->label);
+  strcpy(first->label, second->label);
+  strcpy(second->label,tmpLabel);
+
+  free(tmpLabel);
+}
+
+bool has_to_swap(list_element *first, list_element *second)
+//swappa se il primo è maggiore
+{
+  if(first->index > second->index)
   {
-    thereIsElement = true;
-    element = *list.head; //uso come elemento quello puntato dal puntatore
+    return true;
+  }
+  else if(first->index == second->index)
+  {
+    if(!compare_label(first->label, second->label))
+      return true;
+    else
+      return false;
   }
   else
-    thereIsElement = false;
+    return false;
+}
 
-  while(thereIsElement) //finchè l'elemento non ha NULL come successivo
+bool compare_label(char *str1, char *str2)
+//true se prima stringa è "minore" della seconda
+{
+  for(int i = 0; i < 10; i++)
   {
-    stampaDati(element);
-    if(element.next == NULL) //se non c'è il puntatore all'elemento successivo
-      thereIsElement = false;
-    else                        //il puntatore next punta a qualcosa
-      element = *element.next;  //quel qualcosa diventa il prossimo elemento
+    if(str1[i] < str2[i]) //appena 2 caratteri sono diversi controlla qual è il maggiore
+      return true;
+    if(str1[i] > str2[i])
+      return false;
   }
-
-  // for (int i = 0; i < list.size; i++) {
-  //   stampaDati(elements[i]);
-  //}
-
-  printf("\nLIST_INFO\n");
-  printf("head -> index: %lu  | label: %s\n", list.head->index, list.head->label);
-  printf("tail -> index: %lu  | label: %s\n", list.tail->index, list.tail->label);
-  printf("size = %d\n", list.size);
-
-  return 0;
+  return true; //se i caratteri sono tutti uguali return true
 }
